@@ -1,40 +1,32 @@
-/********************************************************************
+/**********************************************************************
  * File Name : db.js
  *
- * Purpose :
- * Create MySQL Database Connection.
- ********************************************************************/
+ * Purpose:
+ * Creates a reusable MySQL connection pool.
+ **********************************************************************/
 
 const mysql = require("mysql2");
 
-// Create Database Connection
-const connection = mysql.createConnection({
+// Create connection pool
+const pool = mysql.createPool({
 
-    host: "localhost",
+    host: process.env.DB_HOST,
 
-    user: "root",
+    user: process.env.DB_USER,
 
-    password: "root",
+    password: process.env.DB_PASSWORD,
 
-    database: "employee_db"
+    database: process.env.DB_NAME,
 
-});
+    port: process.env.DB_PORT,
 
-// Connect to Database
-connection.connect((error) => {
+    waitForConnections: true,
 
-    if (error) {
+    connectionLimit: 10,
 
-        console.log("Database Connection Failed");
-
-        console.log(error);
-
-        return;
-
-    }
-
-    console.log("Connected to MySQL Database");
+    queueLimit: 0
 
 });
 
-module.exports = connection;
+// Export Promise API
+module.exports = pool.promise();

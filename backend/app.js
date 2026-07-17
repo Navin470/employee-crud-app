@@ -14,6 +14,8 @@
  ********************************************************************/
 
 // Import Express Framework
+
+require("dotenv").config();
 const express = require("express");
 
 // Import CORS Middleware
@@ -26,7 +28,7 @@ const employeeRoutes = require("./routes/employeeRoutes");
 const app = express();
 
 // Port Number
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 // Parses incoming JSON requests

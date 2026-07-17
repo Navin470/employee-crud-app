@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Employee Management System</title>
+
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <div class="container">
+      <h1>Employee Management System</h1>
+
+      <div id="message"></div>
+
+      <!-- ==========================
+             Employee Form
+        =========================== -->
+
+      <div class="search-box">
+        <input type="text" id="search" placeholder="Search Employee" />
+      </div>
+      <br />
+
+      <div class="form-container">
+        <h2>Add Employee</h2>
+
+        <form id="employeeForm">
+          <input type="text" id="name" placeholder="Employee Name" required />
+
+          <input type="email" id="email" placeholder="Email" required />
+
+          <input
+            type="text"
+            id="department"
+            placeholder="Department"
+            required
+          />
+
+          <input
+            type="text"
+            id="designation"
+            placeholder="Designation"
+            required
+          />
+
+          <input type="number" id="salary" placeholder="Salary" required />
+
+          <button type="submit" id="submitBtn">Add Employee</button>
+
+          <button type="button" id="cancelBtn" style="display: none">
+            Cancel
+          </button>
+        </form>
+      </div>
+
+      <!-- ==========================
+             Employee Table
+        =========================== -->
+
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+
+            <th>Name</th>
+
+            <th>Email</th>
+
+            <th>Department</th>
+
+            <th>Designation</th>
+
+            <th>Salary</th>
+
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody id="employeeTable"></tbody>
+      </table>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

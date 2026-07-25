@@ -1,0 +1,13 @@
+############################################################
+# Namespace
+#
+# Keeps all Employee CRUD resources together.
+############################################################
+
+apiVersion: v1
+
+kind: Namespace
+
+metadata:
+
+  name: employee-app

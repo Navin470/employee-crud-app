@@ -1,0 +1,92 @@
+#######################################################################
+# File Name : 05-mysql-deployment.yaml
+#
+# Purpose:
+# Deploy MySQL Database inside Kubernetes.
+#
+# Responsibilities:
+#   - Creates MySQL Pod
+#   - Mounts Persistent Storage
+#   - Reads Password from Secret
+#   - Creates one Replica
+#
+#######################################################################
+
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+
+  name: mysql
+
+  namespace: employee-app
+
+spec:
+
+  # Number of Pods
+  replicas: 1
+
+  selector:
+
+    matchLabels:
+
+      app: mysql
+
+  template:
+
+    metadata:
+
+      labels:
+
+        app: mysql
+
+    spec:
+
+      containers:
+
+      - name: mysql
+
+        image: mysql:8.0
+
+        ports:
+
+        - containerPort: 3306
+
+        env:
+
+        # Root Password
+        - name: MYSQL_ROOT_PASSWORD
+
+          valueFrom:
+
+            secretKeyRef:
+
+              name: mysql-secret
+
+              key: MYSQL_ROOT_PASSWORD
+
+        # Database Name
+        - name: MYSQL_DATABASE
+
+          valueFrom:
+
+            configMapKeyRef:
+
+              name: backend-config
+
+              key: DB_NAME
+
+        volumeMounts:
+
+        - name: mysql-storage
+
+          mountPath: /var/lib/mysql
+
+      volumes:
+
+      - name: mysql-storage
+
+        persistentVolumeClaim:
+
+          claimName: mysql-pvc

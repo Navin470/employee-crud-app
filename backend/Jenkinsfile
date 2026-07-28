@@ -1,45 +1,46 @@
 /***********************************************************************
  *
- * File Name : backend.Jenkinsfile
+ * File Name  : backend.Jenkinsfile
  *
  * Purpose:
- * --------
- * Build the Backend Docker Image
- * Push the Backend Docker Image to Docker Hub
+ * ----------
+ * Build Backend Docker Image
+ * Push Backend Docker Image to Docker Hub
  *
- * Pipeline Flow
- * -------------
- *
- * GitHub
- *    │
- * Checkout Source Code
- *    │
- * Build Docker Image
- *    │
- * Login to Docker Hub
- *    │
- * Push Docker Image
- *    │
- * Cleanup Local Images
+ * Author : Navin Raj
  *
  ***********************************************************************/
 
 pipeline {
+
+    /*******************************************************************
+     * Jenkins Kubernetes Agent
+     *******************************************************************/
     agent {
         kubernetes {
+
             yaml '''
 apiVersion: v1
 kind: Pod
+
 metadata:
   labels:
-    component: ci
-spec: 
+    component: backend-ci
+
+spec:
+
   containers:
+
   - name: docker
     image: docker:24.0.5
-    command: ["cat"]
+
+    command:
+    - cat
+
     tty: true
+
     volumeMounts:
+
     - name: dockersock
       mountPath: /var/run/docker.sock
 
@@ -47,74 +48,178 @@ spec:
     image: jenkins/inbound-agent:latest
 
   volumes:
+
   - name: dockersock
     hostPath:
       path: /var/run/docker.sock
 '''
         }
     }
-    
+
+    /*******************************************************************
+     * Environment Variables
+     *******************************************************************/
     environment {
-        // Change this to your frontend image name
-        DOCKER_IMAGE = "navin1199/backend"
+
+        DOCKER_IMAGE = "navin1199/employee-backend"
+
         DOCKER_TAG = "${BUILD_NUMBER}"
+
     }
 
     stages {
-        stage('Checkout Code') {
+
+        /***************************************************************
+         * Checkout Source Code
+         ***************************************************************/
+        stage('Checkout Source Code') {
+
             steps {
-                git branch: 'master', url: 'https://github.com/Navin470/employee-crud-app'
+
+                git branch: 'master',
+                    url: 'https://github.com/Navin470/employee-crud-app.git'
+
             }
+
         }
 
-        stage('Build Backend Image') {
+        /***************************************************************
+         * Build Backend Image
+         ***************************************************************/
+        stage('Build Backend Docker Image') {
+
             steps {
-                container("docker"){
+
+                container('docker') {
+
                     sh """
-                        # Point this to the folder where your Backend Dockerfile is
-                        docker build -t $DOCKER_IMAGE:$DOCKER_TAG Backend
+
+                        echo "Building Backend Docker Image..."
+
+                        docker build \
+                        -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
+                        backend
+
                     """
+
                 }
+
             }
+
         }
 
-        stage('Login to DockerHub') {
+        /***************************************************************
+         * Login Docker Hub
+         ***************************************************************/
+        stage('Docker Hub Login') {
+
             steps {
-                container("docker"){
-                    withCredentials([usernamePassword(
-                        credentialsId: 'dockerhub-creds',
-                        usernameVariable: 'USERNAME',
-                        passwordVariable: 'PASSWORD'
-                    )]) {
-                        sh "echo \$PASSWORD | docker login -u \$USERNAME --password-stdin"
+
+                container('docker') {
+
+                    withCredentials([
+
+                        usernamePassword(
+
+                            credentialsId: 'dockerhub-creds',
+
+                            usernameVariable: 'USERNAME',
+
+                            passwordVariable: 'PASSWORD'
+
+                        )
+
+                    ]) {
+
+                        sh """
+
+                        echo \$PASSWORD | docker login \
+                        -u \$USERNAME \
+                        --password-stdin
+
+                        """
+
                     }
+
                 }
+
             }
+
         }
 
-        stage('Push Backend Image') {
+        /***************************************************************
+         * Push Docker Image
+         ***************************************************************/
+        stage('Push Backend Docker Image') {
+
             steps {
-                container("docker"){
-                    sh "docker push $DOCKER_IMAGE:$DOCKER_TAG"
+
+                container('docker') {
+
+                    sh """
+
+                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
+
+                    """
+
                 }
+
             }
+
         }
 
+        /***************************************************************
+         * Cleanup Local Image
+         ***************************************************************/
         stage('Cleanup') {
+
             steps {
-                container("docker"){
-                    sh "docker rmi $DOCKER_IMAGE:$DOCKER_TAG || true"
+
+                container('docker') {
+
+                    sh """
+
+                    docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true
+
+                    """
+
                 }
+
             }
+
         }
+
     }
 
+    /*******************************************************************
+     * Pipeline Status
+     *******************************************************************/
     post {
+
         success {
-            echo "Backend Service Build & Push Successful"
+
+            echo "========================================="
+
+            echo "Backend Image Successfully Pushed"
+
+            echo "Image : ${DOCKER_IMAGE}:${DOCKER_TAG}"
+
+            echo "========================================="
+
         }
+
         failure {
-            echo "Backend Build Failed"
+
+            echo "Backend Pipeline Failed"
+
         }
+
+        always {
+
+            cleanWs()
+
+        }
+
     }
+
 }

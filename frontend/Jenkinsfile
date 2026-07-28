@@ -1,0 +1,142 @@
+/***********************************************************************
+ *
+ * File Name : frontend.Jenkinsfile
+ *
+ * Purpose:
+ * --------
+ * Build the Frontend Docker Image
+ * Push the Frontend Docker Image to Docker Hub
+ *
+ ***********************************************************************/
+
+pipeline {
+
+    agent any
+
+    environment {
+
+        DOCKER_USERNAME = "navin1199"
+
+        IMAGE_NAME = "employee-frontend"
+
+        IMAGE_TAG = "${BUILD_NUMBER}"
+
+        FULL_IMAGE_NAME = "${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+
+    }
+
+    stages {
+
+        /**********************************************************
+         * Stage 1
+         **********************************************************/
+        stage('Checkout Source Code') {
+
+            steps {
+
+                echo "Checking out source code..."
+
+                checkout scm
+
+            }
+
+        }
+
+        /**********************************************************
+         * Stage 2
+         **********************************************************/
+        stage('Build Frontend Docker Image') {
+
+            steps {
+
+                dir('frontend') {
+
+                    script {
+
+                        echo "Building Frontend Image..."
+
+                        frontendImage = docker.build(FULL_IMAGE_NAME)
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        /**********************************************************
+         * Stage 3
+         **********************************************************/
+        stage('Push Docker Image') {
+
+            steps {
+
+                script {
+
+                    docker.withRegistry(
+
+                        'https://index.docker.io/v1/',
+
+                        'dockerhub'
+
+                    ) {
+
+                        echo "Pushing Frontend Image..."
+
+                        frontendImage.push()
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        /**********************************************************
+         * Stage 4
+         **********************************************************/
+        stage('Image Information') {
+
+            steps {
+
+                echo "-------------------------------------"
+
+                echo "Frontend Image Successfully Pushed"
+
+                echo "Image Name : ${FULL_IMAGE_NAME}"
+
+                echo "-------------------------------------"
+
+            }
+
+        }
+
+    }
+
+    post {
+
+        success {
+
+            echo "Frontend Pipeline Completed Successfully."
+
+        }
+
+        failure {
+
+            echo "Frontend Pipeline Failed."
+
+        }
+
+        always {
+
+            echo "Cleaning Local Docker Images..."
+
+            sh "docker image prune -f"
+
+        }
+
+    }
+
+}

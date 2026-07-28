@@ -1,0 +1,175 @@
+/***********************************************************************
+ *
+ * File Name : backend.Jenkinsfile
+ *
+ * Purpose:
+ * --------
+ * Build the Backend Docker Image
+ * Push the Backend Docker Image to Docker Hub
+ *
+ * Pipeline Flow
+ * -------------
+ *
+ * GitHub
+ *    │
+ * Checkout Source Code
+ *    │
+ * Build Docker Image
+ *    │
+ * Login to Docker Hub
+ *    │
+ * Push Docker Image
+ *    │
+ * Cleanup Local Images
+ *
+ ***********************************************************************/
+
+pipeline {
+
+    /**************************************************************
+     * Agent
+     *
+     * Run this pipeline on any available Jenkins agent.
+     **************************************************************/
+    agent any
+
+    /**************************************************************
+     * Environment Variables
+     **************************************************************/
+    environment {
+
+        // Docker Hub Username
+        DOCKER_USERNAME = "navin1199"
+
+        // Backend Image Name
+        IMAGE_NAME = "employee-backend"
+
+        // Docker Image Tag
+        IMAGE_TAG = "${BUILD_NUMBER}"
+
+        // Full Image Name
+        FULL_IMAGE_NAME = "${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+    }
+
+    stages {
+
+        /**********************************************************
+         * Stage 1
+         * Checkout Source Code
+         **********************************************************/
+        stage('Checkout Source Code') {
+
+            steps {
+
+                echo "Checking out source code from GitHub..."
+
+                checkout scm
+
+            }
+
+        }
+
+        /**********************************************************
+         * Stage 2
+         * Build Docker Image
+         **********************************************************/
+        stage('Build Backend Docker Image') {
+
+            steps {
+
+                dir('backend') {
+
+                    script {
+
+                        echo "Building Backend Docker Image..."
+
+                        backendImage = docker.build(FULL_IMAGE_NAME)
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        /**********************************************************
+         * Stage 3
+         * Login & Push Image
+         **********************************************************/
+        stage('Push Docker Image') {
+
+            steps {
+
+                script {
+
+                    docker.withRegistry(
+
+                        'https://index.docker.io/v1/',
+
+                        'dockerhub'
+
+                    ) {
+
+                        echo "Pushing Backend Image..."
+
+                        backendImage.push()
+
+                    }
+
+                }
+
+            }
+
+        }
+
+        /**********************************************************
+         * Stage 4
+         * Display Image Information
+         **********************************************************/
+        stage('Image Information') {
+
+            steps {
+
+                echo "-------------------------------------"
+
+                echo "Backend Image Successfully Pushed"
+
+                echo "Image Name : ${FULL_IMAGE_NAME}"
+
+                echo "-------------------------------------"
+
+            }
+
+        }
+
+    }
+
+    /**************************************************************
+     * Post Actions
+     **************************************************************/
+    post {
+
+        success {
+
+            echo "Backend Pipeline Completed Successfully."
+
+        }
+
+        failure {
+
+            echo "Backend Pipeline Failed."
+
+        }
+
+        always {
+
+            echo "Cleaning Local Docker Images..."
+
+            sh "docker image prune -f"
+
+        }
+
+    }
+
+}

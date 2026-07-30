@@ -1,61 +1,145 @@
 /***********************************************************************
  *
- * File Name : frontend.Jenkinsfile
+ * File Name  : frontend.Jenkinsfile
  *
  * Purpose:
- * --------
- * Build the Frontend Docker Image
- * Push the Frontend Docker Image to Docker Hub
+ * ----------
+ * Build Frontend Docker Image
+ * Push Frontend Docker Image to Docker Hub
+ *
+ * Author : Navin Raj
  *
  ***********************************************************************/
 
 pipeline {
 
-    agent any
+    /*******************************************************************
+     * Jenkins Kubernetes Agent
+     *******************************************************************/
+    agent {
 
+        kubernetes {
+
+            yaml '''
+apiVersion: v1
+kind: Pod
+
+metadata:
+  labels:
+    component: frontend-ci
+
+spec:
+
+  containers:
+
+  - name: docker
+    image: docker:24.0.5
+
+    command:
+    - cat
+
+    tty: true
+
+    volumeMounts:
+
+    - name: dockersock
+      mountPath: /var/run/docker.sock
+
+  - name: jnlp
+    image: jenkins/inbound-agent:latest
+
+  volumes:
+
+  - name: dockersock
+    hostPath:
+      path: /var/run/docker.sock
+'''
+        }
+
+    }
+
+    /*******************************************************************
+     * Environment Variables
+     *******************************************************************/
     environment {
 
-        DOCKER_USERNAME = "navin1199"
+        DOCKER_IMAGE = "navin1199/employee-frontend"
 
-        IMAGE_NAME = "employee-frontend"
-
-        IMAGE_TAG = "${BUILD_NUMBER}"
-
-        FULL_IMAGE_NAME = "${DOCKER_USERNAME}/${IMAGE_NAME}:${IMAGE_TAG}"
+        DOCKER_TAG = "${BUILD_NUMBER}"
 
     }
 
     stages {
 
-        /**********************************************************
-         * Stage 1
-         **********************************************************/
+        /***************************************************************
+         * Checkout Source Code
+         ***************************************************************/
         stage('Checkout Source Code') {
 
             steps {
 
-                echo "Checking out source code..."
-
-                checkout scm
+                git branch: 'master',
+                    url: 'https://github.com/Navin470/employee-crud-app.git'
 
             }
 
         }
 
-        /**********************************************************
-         * Stage 2
-         **********************************************************/
+        /***************************************************************
+         * Build Frontend Image
+         ***************************************************************/
         stage('Build Frontend Docker Image') {
 
             steps {
 
-                dir('frontend') {
+                container('docker') {
 
-                    script {
+                    sh """
 
-                        echo "Building Frontend Image..."
+                        echo "Building Frontend Docker Image..."
 
-                        frontendImage = docker.build(FULL_IMAGE_NAME)
+                        docker build \
+                        -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
+                        frontend
+
+                    """
+
+                }
+
+            }
+
+        }
+
+        /***************************************************************
+         * Docker Hub Login
+         ***************************************************************/
+        stage('Docker Hub Login') {
+
+            steps {
+
+                container('docker') {
+
+                    withCredentials([
+
+                        usernamePassword(
+
+                            credentialsId: 'dockerhub-creds',
+
+                            usernameVariable: 'USERNAME',
+
+                            passwordVariable: 'PASSWORD'
+
+                        )
+
+                    ]) {
+
+                        sh """
+
+                        echo \$PASSWORD | docker login \
+                        -u \$USERNAME \
+                        --password-stdin
+
+                        """
 
                     }
 
@@ -65,28 +149,20 @@ pipeline {
 
         }
 
-        /**********************************************************
-         * Stage 3
-         **********************************************************/
-        stage('Push Docker Image') {
+        /***************************************************************
+         * Push Docker Image
+         ***************************************************************/
+        stage('Push Frontend Docker Image') {
 
             steps {
 
-                script {
+                container('docker') {
 
-                    docker.withRegistry(
+                    sh """
 
-                        'https://index.docker.io/v1/',
+                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
 
-                        'dockerhub'
-
-                    ) {
-
-                        echo "Pushing Frontend Image..."
-
-                        frontendImage.push()
-
-                    }
+                    """
 
                 }
 
@@ -94,20 +170,22 @@ pipeline {
 
         }
 
-        /**********************************************************
-         * Stage 4
-         **********************************************************/
-        stage('Image Information') {
+        /***************************************************************
+         * Cleanup
+         ***************************************************************/
+        stage('Cleanup') {
 
             steps {
 
-                echo "-------------------------------------"
+                container('docker') {
 
-                echo "Frontend Image Successfully Pushed"
+                    sh """
 
-                echo "Image Name : ${FULL_IMAGE_NAME}"
+                    docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true
 
-                echo "-------------------------------------"
+                    """
+
+                }
 
             }
 
@@ -115,25 +193,32 @@ pipeline {
 
     }
 
+    /*******************************************************************
+     * Pipeline Status
+     *******************************************************************/
     post {
 
         success {
 
-            echo "Frontend Pipeline Completed Successfully."
+            echo "========================================="
+
+            echo "Frontend Image Successfully Pushed"
+
+            echo "Image : ${DOCKER_IMAGE}:${DOCKER_TAG}"
+
+            echo "========================================="
 
         }
 
         failure {
 
-            echo "Frontend Pipeline Failed."
+            echo "Frontend Pipeline Failed"
 
         }
 
         always {
 
-            echo "Cleaning Local Docker Images..."
-
-            sh "docker image prune -f"
+            cleanWs()
 
         }
 

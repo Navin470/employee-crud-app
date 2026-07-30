@@ -1,0 +1,156 @@
+###############################################################################
+# File Name   : 07-backend-deployment.yaml
+#
+# Description :
+# -----------------------------------------------------------------------------
+# This Deployment creates the Backend API Pod.
+#
+# Responsibilities:
+#   1. Pull Backend Image from Docker Hub
+#   2. Create Backend Container
+#   3. Read Database Configuration from ConfigMap
+#   4. Read Database Credentials from Secret
+#   5. Expose Port 5000 inside the Pod
+#   6. Restart Pod automatically if it crashes
+#
+###############################################################################
+
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+
+  name: backend
+
+  namespace: employee-app
+
+  labels:
+
+    app: backend
+
+spec:
+
+  # Number of Backend Pods
+  replicas: 1
+
+  selector:
+
+    matchLabels:
+
+      app: backend
+
+  template:
+
+    metadata:
+
+      labels:
+
+        app: backend
+
+    spec:
+
+      containers:
+
+        - name: backend
+
+          # Docker Hub Image
+          image: navin1199/employee-backend:5
+
+          imagePullPolicy: Always
+
+          ports:
+
+            - containerPort: 5000
+
+          ###################################################################
+          # Environment Variables from ConfigMap
+          ###################################################################
+
+          env:
+
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: PORT
+
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: DB_HOST
+
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: DB_PORT
+
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: backend-config
+                  key: DB_NAME
+
+            #################################################################
+            # Environment Variables from Secret
+            #################################################################
+
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_USER
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: DB_PASSWORD
+
+          ###################################################################
+          # Health Checks
+          ###################################################################
+
+          readinessProbe:
+
+            httpGet:
+
+              path: /employees
+
+              port: 5000
+
+            initialDelaySeconds: 10
+
+            periodSeconds: 10
+
+          livenessProbe:
+
+            httpGet:
+
+              path: /employees
+
+              port: 5000
+
+            initialDelaySeconds: 30
+
+            periodSeconds: 20
+
+          ###################################################################
+          # Resource Limits
+          ###################################################################
+
+          resources:
+
+            requests:
+
+              cpu: "100m"
+
+              memory: "128Mi"
+
+            limits:
+
+              cpu: "250m"
+
+              memory: "256Mi"

@@ -1,0 +1,58 @@
+###############################################################################
+# File Name   : 08-backend-service.yaml
+#
+# Description :
+# -----------------------------------------------------------------------------
+# This Service exposes the Backend Deployment inside the Kubernetes cluster.
+#
+# Responsibilities:
+#   1. Provides a stable DNS name for the Backend.
+#   2. Routes requests to Backend Pods.
+#   3. Enables communication between Frontend and Backend.
+#
+###############################################################################
+
+apiVersion: v1
+
+kind: Service
+
+metadata:
+
+  name: backend-service
+
+  namespace: employee-app
+
+  labels:
+
+    app: backend
+
+spec:
+
+  #########################################################################
+  # ClusterIP means this Service is only accessible
+  # from inside the Kubernetes cluster.
+  #########################################################################
+
+  type: ClusterIP
+
+  #########################################################################
+  # Select all Pods having label:
+  #
+  # app=backend
+  #########################################################################
+
+  selector:
+
+    app: backend
+
+  #########################################################################
+  # Service Port Mapping
+  #########################################################################
+
+  ports:
+
+    - protocol: TCP
+
+      port: 5000
+
+      targetPort: 5000

@@ -1,8 +1,18 @@
-############################################################
-# Namespace
+###############################################################################
+# File Name : namespace.yaml
 #
-# Keeps all Employee CRUD resources together.
-############################################################
+# Description:
+# -----------------------------------------------------------------------------
+# This file creates a dedicated namespace for the Employee CRUD Application.
+#
+# Why Namespace?
+#
+# - Groups all application resources together.
+# - Avoids conflicts with other applications.
+# - Makes resource management easier.
+# - Enables future resource quotas and RBAC.
+#
+###############################################################################
 
 apiVersion: v1
 
@@ -10,4 +20,13 @@ kind: Namespace
 
 metadata:
 
+  # Namespace Name
   name: employee-app
+
+  labels:
+
+    app: employee-crud
+
+    environment: development
+
+    managed-by: kubectl

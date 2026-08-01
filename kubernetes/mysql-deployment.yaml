@@ -1,44 +1,53 @@
-#######################################################################
-# File Name : 05-mysql-deployment.yaml
+###############################################################################
+# File Name : mysql-deployment.yaml
 #
-# Purpose:
-# Deploy MySQL Database inside Kubernetes.
+# Description:
+# -----------------------------------------------------------------------------
+# Deploys a MySQL Database for Employee CRUD Application.
 #
-# Responsibilities:
-#   - Creates MySQL Pod
-#   - Mounts Persistent Storage
-#   - Reads Password from Secret
-#   - Creates one Replica
+# Responsibilities
+# ----------------
+# ✔ Creates one MySQL Pod
+# ✔ Uses Persistent Storage
+# ✔ Executes init.sql automatically (First Startup Only)
+# ✔ Reads Password from Secret
+# ✔ Reads Database Name from ConfigMap
+# ✔ Restarts automatically if Pod crashes
 #
-#######################################################################
+###############################################################################
 
 apiVersion: apps/v1
 
 kind: Deployment
 
 metadata:
-
   name: mysql
-
   namespace: employee-app
+
+  labels:
+    app: mysql
 
 spec:
 
-  # Number of Pods
+  ###########################################################################
+  # Only ONE MySQL instance
+  ###########################################################################
+
   replicas: 1
 
   selector:
-
     matchLabels:
-
       app: mysql
+
+  ###########################################################################
+  # Pod Template
+  ###########################################################################
 
   template:
 
     metadata:
 
       labels:
-
         app: mysql
 
     spec:
@@ -49,44 +58,123 @@ spec:
 
         image: mysql:8.0
 
+        imagePullPolicy: IfNotPresent
+
         ports:
 
         - containerPort: 3306
+
+        ####################################################################
+        # Environment Variables
+        ####################################################################
 
         env:
 
         # Root Password
         - name: MYSQL_ROOT_PASSWORD
-
           valueFrom:
-
             secretKeyRef:
-
               name: mysql-secret
-
               key: MYSQL_ROOT_PASSWORD
 
         # Database Name
         - name: MYSQL_DATABASE
-
           valueFrom:
-
             configMapKeyRef:
-
               name: backend-config
-
               key: DB_NAME
+
+        ####################################################################
+        # Resource Requests & Limits
+        # (Optimized for 8GB RAM Laptop)
+        ####################################################################
+
+        resources:
+
+          requests:
+            cpu: "100m"
+            memory: "256Mi"
+
+          limits:
+            cpu: "300m"
+            memory: "512Mi"
+
+        ####################################################################
+        # Volume Mounts
+        ####################################################################
 
         volumeMounts:
 
+        # Persistent Database Storage
         - name: mysql-storage
-
           mountPath: /var/lib/mysql
+
+        # SQL Initialization Script
+        - name: mysql-init-script
+          mountPath: /docker-entrypoint-initdb.d
+          readOnly: true
+
+        ####################################################################
+        # Startup Probe
+        #
+        # Gives MySQL enough time to initialize.
+        ####################################################################
+
+        startupProbe:
+
+          tcpSocket:
+            port: 3306
+
+          periodSeconds: 10
+
+          failureThreshold: 30
+
+        ####################################################################
+        # Readiness Probe
+        #
+        # Pod receives traffic ONLY after MySQL is ready.
+        ####################################################################
+
+        readinessProbe:
+
+          tcpSocket:
+            port: 3306
+
+          initialDelaySeconds: 10
+
+          periodSeconds: 10
+
+        ####################################################################
+        # Liveness Probe
+        #
+        # Restarts MySQL if it becomes unhealthy.
+        ####################################################################
+
+        livenessProbe:
+
+          tcpSocket:
+            port: 3306
+
+          initialDelaySeconds: 30
+
+          periodSeconds: 20
+
+      ########################################################################
+      # Volumes
+      ########################################################################
 
       volumes:
 
+      # Persistent Storage
       - name: mysql-storage
 
         persistentVolumeClaim:
 
           claimName: mysql-pvc
+
+      # SQL Initialization Script
+      - name: mysql-init-script
+
+        configMap:
+
+          name: mysql-init-script

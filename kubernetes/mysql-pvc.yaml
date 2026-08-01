@@ -1,3 +1,20 @@
+###############################################################################
+# File Name : mysql-pvc.yaml
+#
+# Description:
+# -----------------------------------------------------------------------------
+# This PersistentVolumeClaim (PVC) requests persistent storage for MySQL.
+#
+# Why?
+#
+# Without a PVC:
+#   - Database data is lost when the Pod is deleted.
+#
+# With a PVC:
+#   - Data survives Pod restarts and recreations.
+#
+###############################################################################
+
 apiVersion: v1
 
 kind: PersistentVolumeClaim
@@ -8,24 +25,26 @@ metadata:
 
   namespace: employee-app
 
+  labels:
+
+    app: mysql
+
 spec:
+
+  ###########################################################################
+  # ReadWriteOnce means only one Pod can mount this volume for writing.
+  ###########################################################################
 
   accessModes:
 
-  - ReadWriteOnce
+    - ReadWriteOnce
+
+  ###########################################################################
+  # Storage Request
+  ###########################################################################
 
   resources:
 
     requests:
 
       storage: 2Gi
-
-# Why?
-
-# Without PVC
-
-# Delete Pod
-
-# ↓
-
-# Database Lost

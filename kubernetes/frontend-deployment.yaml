@@ -1,0 +1,133 @@
+###############################################################################
+# File Name : frontend-deployment.yaml
+#
+# Description:
+# -----------------------------------------------------------------------------
+# Deploys the Frontend Application.
+#
+# Responsibilities
+# ----------------
+# ✔ Pull Frontend Image from DockerHub
+# ✔ Serve Static Website
+# ✔ Expose Port 80
+# ✔ Restart Automatically if Pod Crashes
+#
+###############################################################################
+
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+  name: frontend
+
+  namespace: employee-app
+
+  labels:
+    app: frontend
+
+spec:
+
+  ###########################################################################
+  # Only one Frontend Pod
+  ###########################################################################
+
+  replicas: 1
+
+  selector:
+
+    matchLabels:
+
+      app: frontend
+
+  ###########################################################################
+  # Pod Template
+  ###########################################################################
+
+  template:
+
+    metadata:
+
+      labels:
+
+        app: frontend
+
+    spec:
+
+      containers:
+
+      - name: frontend
+
+        #####################################################################
+        # Docker Image
+        #####################################################################
+
+        image: navin1199/employee-frontend:1
+
+        imagePullPolicy: IfNotPresent
+
+        #####################################################################
+        # Expose Container Port
+        #####################################################################
+
+        ports:
+
+        - containerPort: 80
+
+        #####################################################################
+        # Resource Requests & Limits
+        #####################################################################
+
+        resources:
+
+          requests:
+
+            cpu: "50m"
+
+            memory: "64Mi"
+
+          limits:
+
+            cpu: "200m"
+
+            memory: "128Mi"
+
+        #####################################################################
+        # Health Checks
+        #####################################################################
+
+        startupProbe:
+
+          httpGet:
+
+            path: /
+
+            port: 80
+
+          periodSeconds: 10
+
+          failureThreshold: 30
+
+        readinessProbe:
+
+          httpGet:
+
+            path: /
+
+            port: 80
+
+          initialDelaySeconds: 5
+
+          periodSeconds: 10
+
+        livenessProbe:
+
+          httpGet:
+
+            path: /
+
+            port: 80
+
+          initialDelaySeconds: 20
+
+          periodSeconds: 20

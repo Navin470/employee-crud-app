@@ -1,17 +1,17 @@
 ###############################################################################
-# File Name   : 06-mysql-service.yaml
+# File Name : mysql-service.yaml
 #
-# Description :
+# Description:
 # -----------------------------------------------------------------------------
-# This Service exposes the MySQL Pod inside the Kubernetes cluster.
+# Exposes the MySQL Pod inside the Kubernetes cluster.
 #
 # Responsibilities:
-#   1. Provides a stable DNS name (mysql-service)
-#   2. Routes traffic to the MySQL Pod
-#   3. Allows Backend Pods to connect to MySQL
+# ✔ Provides a stable DNS name (mysql-service)
+# ✔ Provides a stable Cluster IP
+# ✔ Allows Backend Pods to connect to MySQL
 #
-# Note:
-#   This Service is only accessible from inside the Kubernetes cluster.
+# Service Type:
+#   ClusterIP (Internal Communication Only)
 #
 ###############################################################################
 
@@ -32,13 +32,13 @@ metadata:
 spec:
 
   ###########################################################################
-  # ClusterIP makes the service accessible only inside the cluster.
+  # Internal Kubernetes Service
   ###########################################################################
 
   type: ClusterIP
 
   ###########################################################################
-  # This selector MUST match the labels defined in the MySQL Deployment.
+  # Select MySQL Pods
   ###########################################################################
 
   selector:
@@ -53,8 +53,8 @@ spec:
 
     - name: mysql
 
-      protocol: TCP
-
       port: 3306
 
       targetPort: 3306
+
+      protocol: TCP
